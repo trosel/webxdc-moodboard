@@ -408,12 +408,22 @@ function applyPayload(p) {
 }
 
 function boardSummary() { return state.boardName || 'Mood Board'; }
-function itemSummary() { 
-  const itemWord = state.items.size === 1 ? 'item' : 'items';
-  return state.items.size > 0 ? `${state.items.size} ${itemWord}` : 'Add something';
+// Add an optional 'newItem' parameter to include in the count/authors
+function itemSummary(newItem = null) { 
+  let count = state.items.size;
+  if (newItem && newItem.t === 'add') count += 1; // Count the incoming item
+  
+  if (count === 0) return 'Add something';
+  return `${count} ${count === 1 ? 'item' : 'items'}`;
 }
-function authorSummary() { 
+
+function authorSummary(newItem = null) { 
   const names = [...new Set(Array.from(state.items.values()).map(item => item.authorName))];
+  
+  // If we are adding an item, make sure its author is included in the list
+  if (newItem && newItem.t === 'add' && !names.includes(newItem.authorName)) {
+    names.push(newItem.authorName);
+  }
 
   return names.length > 0 ? ` from ${names.join(', ')}` : '';
 }
@@ -437,7 +447,7 @@ function sendItem(kind, content) {
     payload,
     info: `${me.name} added ${articleWord} ${kind} to ${boardSummary()}${preview}`,
     document: boardSummary(),
-    summary: `${itemSummary()}${authorSummary()}`
+    summary: `${itemSummary(payload)}${authorSummary(payload)}`
   }, '');
 }
 function sendRemove(itemId) {
