@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Mood Board</title>
+<script src="webxdc.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  :root {
+    --bg: #fafaf7;
+    --surface: #ffffff;
+    --ink: #2a2a2a;
+    --muted: #6e6e6e;
+    --line: #e8e6e0;
+    --radius: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #15140f;
+      --surface: #1f1e19;
+      --ink: #ece9e3;
+      --muted: #8c8a85;
+      --line: #34322c;
+    }
+  }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 15px;
+    min-height: 100vh;
+    -webkit-tap-highlight-color: transparent;
+  }
+  header {
+    position: sticky; top: 0; z-index: 10;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+    padding: 10px 14px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .title {
+    font: inherit;
+    font-weight: 600; font-size: 16px;
+    margin-right: auto;
+    margin-left: -8px;
+    background: transparent;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    display: flex; align-items: center; gap: 6px;
+    max-width: 65%;
+    text-align: left;
+  }
+  .title:hover { background: var(--bg); }
+  #title-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .title-edit { font-size: 11px; opacity: 0.55; flex-shrink: 0; }
+  .title:hover .title-edit { opacity: 1; }
+  .presence { display: flex; align-items: center; }
+  .avatar {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: white;
+    font-size: 12px; font-weight: 600;
+    border: 2px solid var(--surface);
+    margin-left: -8px;
+  }
+  .avatar:first-child { margin-left: 0; }
+  .avatar.self { box-shadow: 0 0 0 2px #4ecdc4; }
+  .presence-count { color: var(--muted); font-size: 12px; margin-left: 8px; }
+  .add-bar {
+    display: flex; gap: 6px; padding: 10px 14px;
+    background: var(--surface); border-bottom: 1px solid var(--line);
+    flex-wrap: wrap;
+  }
+  .btn {
+    padding: 7px 12px;
+    background: var(--ink);
+    color: var(--bg);
+    border: none;
+    border-radius: var(--radius);
+    font-size: 14px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .btn.ghost {
+    background: transparent; color: var(--ink); border: 1px solid var(--line);
+  }
+  .grid {
+    column-count: 2;
+    column-gap: 10px;
+    padding: 10px;
+  }
+  @media (min-width: 600px) { .grid { column-count: 3; } }
+  @media (min-width: 900px) { .grid { column-count: 4; } }
+  .tile {
+    break-inside: avoid;
+    background: var(--surface);
+    border-radius: var(--radius);
+    margin-bottom: 10px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    display: block;
+    position: relative;
+  }
+  .tile img { width: 100%; display: block; }
+  .swatch {
+    aspect-ratio: 1;
+    display: flex; align-items: flex-start;
+    padding: 10px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.45);
+  }
+  .text-tile { padding: 10px 12px; font-size: 15px; line-height: 1.45; font-weight: 500; }
+  .text-tile.text-display {
+    font-size: 32px;
+    font-weight: 600;
+    line-height: 1.15;
+    letter-spacing: -0.015em;
+    padding: 14px 14px;
+    text-align: center;
+  }
+  .text-tile.text-medium {
+    font-size: 20px;
+    line-height: 1.3;
+    padding: 12px 14px;
+  }
+  .tile-meta {
+    display: flex; align-items: center; gap: 8px;
+    padding: 3px 8px;
+    font-size: 12px;
+    color: var(--muted);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+  }
+  .tile-meta.overlay {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    padding: 22px 10px 8px;
+    background: linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0));
+    color: rgba(255,255,255,0.95);
+  }
+  .tile.revealed .tile-meta,
+  .tile:focus-within .tile-meta {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  @media (hover: hover) {
+    .tile:hover .tile-meta { opacity: 1; pointer-events: auto; }
+  }
+  .author-dot {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center; justify-content: center;
+    color: white;
+    font-size: 10px;
+    font-weight: 600;
+    font-family: inherit;
+  }
+  .tile-meta.overlay .author-dot {
+    width: 20px; height: 20px;
+    font-size: 11px;
+    box-shadow: 0 0 0 1.5px rgba(255,255,255,0.7);
+  }
+  .delete-btn {
+    position: absolute;
+    top: 6px; right: 6px;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.45);
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 11px;
+    line-height: 1;
+    padding: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: inherit;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+  }
+  .tile.revealed .delete-btn,
+  .tile:focus-within .delete-btn { opacity: 0.85; pointer-events: auto; }
+  @media (hover: hover) {
+    .tile:hover .delete-btn { opacity: 0.85; pointer-events: auto; }
+  }
+  .delete-btn:hover { opacity: 1 !important; }
+  .drag-handle {
+    flex-shrink: 0;
+    margin-left: auto;
+    border: none;
+    background: transparent;
+    color: inherit;
+    padding: 2px 4px;
+    font-size: 14px;
+    line-height: 1;
+    opacity: 0.7;
+    cursor: grab;
+    font-family: inherit;
+    touch-action: none;
+  }
+  .drag-handle:active { cursor: grabbing; }
+  .tile.dragging {
+    opacity: 0.95;
+    box-shadow: 0 14px 36px rgba(0,0,0,0.35);
+    transition: none;
+  }
+  .tile.dragging, .tile.dragging * { pointer-events: none !important; }
+  .tile.placeholder {
+    background: rgba(120, 160, 230, 0.18);
+    border: 2px dashed #6f8fd0;
+    box-sizing: border-box;
+  }
+  @media (prefers-color-scheme: dark) {
+    .tile.placeholder { background: rgba(140, 170, 230, 0.12); border-color: #6f8fd0; }
+  }
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.4);
+    display: none; align-items: center; justify-content: center;
+    z-index: 100;
+    padding: 20px;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 18px;
+    max-width: 320px; width: 100%;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .modal h3 { margin: 0 0 4px; font-size: 16px; }
+  input[type=text], input[type=color] {
+    padding: 8px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font: inherit;
+    width: 100%;
+    background: var(--surface);
+    color: var(--ink);
+  }
+  input[type=color] { height: 44px; padding: 4px; cursor: pointer; }
+  .row { display: flex; gap: 8px; }
+  .row .btn { flex: 1; }
+  .empty {
+    text-align: center; color: var(--muted);
+    padding: 60px 20px;
+    column-span: all;
+  }
+</style>
+</head>
+<body>
+<header>
+  <button class="title" type="button" onclick="openName()" title="Rename this board">
+    <span id="title-text">Mood Board</span>
+    <span class="title-edit" aria-hidden="true">✎</span>
+  </button>
+  <div class="presence" id="presence"></div>
+  <span class="presence-count" id="presence-count"></span>
+</header>
+<div class="add-bar">
+  <button class="btn ghost" onclick="document.getElementById('img-input').click()">+ Image</button>
+  <input type="file" id="img-input" accept="image/*" style="display:none">
+  <button class="btn ghost" onclick="openColor()">+ Color</button>
+  <button class="btn ghost" onclick="openText()">+ Text</button>
+</div>
+<div id="grid" class="grid"></div>
+
+<div class="modal-backdrop" id="color-modal">
+  <div class="modal">
+    <h3>Add color</h3>
+    <input type="color" id="color-picker" value="#ff6b6b">
+    <input type="text" id="color-hex" value="#ff6b6b" maxlength="7">
+    <div class="row">
+      <button class="btn ghost" onclick="closeModals()">Cancel</button>
+      <button class="btn" onclick="addColor()">Add</button>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop" id="text-modal">
+  <div class="modal">
+    <h3>Add text</h3>
+    <input type="text" id="text-input" placeholder="A word, a phrase, a vibe..." maxlength="120">
+    <div class="row">
+      <button class="btn ghost" onclick="closeModals()">Cancel</button>
+      <button class="btn" onclick="addText()">Add</button>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop" id="name-modal">
+  <div class="modal">
+    <h3>Name this board</h3>
+    <input type="text" id="name-input" placeholder="e.g. New Website" maxlength="60">
+    <div class="row">
+      <button class="btn ghost" onclick="closeModals()">Cancel</button>
+      <button class="btn" onclick="saveName()">Save</button>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop" id="confirm-modal">
+  <div class="modal">
+    <h3 id="confirm-title">Remove this?</h3>
+    <p id="confirm-body" style="margin:0;color:var(--muted);font-size:13px;">Everyone in the chat will see it disappear. This can't be undone.</p>
+    <div class="row">
+      <button class="btn ghost" onclick="closeModals()">Cancel</button>
+      <button class="btn" id="confirm-ok">Remove</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---------- webxdc fallback for plain-browser testing ----------
+if (!window.webxdc) {
+  console.warn('webxdc runtime not present, using in-memory stub');
+  const listeners = [];
+  const updates = [];
+  let serial = 0;
+  window.webxdc = {
+    selfAddr: 'me@example.com',
+    selfName: 'Me',
+    sendUpdate(update) {
+      serial++;
+      const u = { ...update, serial, max_serial: serial };
+      updates.push(u);
+      listeners.forEach(l => l(u));
+    },
+    setUpdateListener(cb, since) {
+      listeners.push(cb);
+      updates.slice(since || 0).forEach(cb);
+      return Promise.resolve();
+    },
+    joinRealtimeChannel() {
+      return { send() {}, setListener() {}, leave() {} };
+    }
+  };
+}
+
+// ---------- state ----------
+const state = {
+  items: new Map(),    // id -> {id, kind, content, author, authorName, ts, pos}
+  names: new Map(),    // addr -> displayName
+  presence: new Map(), // addr -> {name, lastSeen}
+  boardName: '',
+};
+const me = {
+  addr: webxdc.selfAddr,
+  name: webxdc.selfName || webxdc.selfAddr,
+};
+const PRESENCE_INTERVAL_MS = 3000;
+const PRESENCE_TIMEOUT_MS = 8000;
+
+// ---------- helpers ----------
+function colorForAddr(addr) {
+  let h = 0;
+  for (let i = 0; i < addr.length; i++) h = (h * 31 + addr.charCodeAt(i)) % 360;
+  return `hsl(${h} 55% 50%)`;
+}
+function initials(name) {
+  return (name || '?').trim().charAt(0).toUpperCase() || '?';
+}
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function textSizeClass(text) {
+  const chars = String(text).trim().length;
+  if (chars <= 20) return 'text-display';
+  if (chars <= 60) return 'text-medium';
+  return '';
+}
+
+// ---------- update handling ----------
+let dragging = false;
+
+webxdc.setUpdateListener((u) => {
+  applyPayload(u.payload);
+  if (!dragging) render();
+}, 0);
+
+function applyPayload(p) {
+  if (!p || !p.t) return;
+  if (p.t === 'add') {
+    state.items.set(p.id, {
+      id: p.id, kind: p.kind, content: p.content,
+      author: p.author, authorName: p.authorName, ts: p.ts || 0,
+      pos: (p.pos != null) ? p.pos : (p.ts || 0),
+    });
+    if (p.author && p.authorName) state.names.set(p.author, p.authorName);
+  } else if (p.t === 'move') {
+    const it = state.items.get(p.itemId);
+    if (it && typeof p.pos === 'number') it.pos = p.pos;
+  } else if (p.t === 'remove') {
+    state.items.delete(p.itemId);
+  } else if (p.t === 'setName') {
+    state.boardName = (typeof p.name === 'string') ? p.name : '';
+    document.title = state.boardName || 'Mood Board';
+  }
+}
+
+function boardSummary() { return state.boardName || 'Mood Board'; }
+
+function sendItem(kind, content) {
+  const id = 'i_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
+  let minPos = 0;
+  for (const it of state.items.values()) {
+    if (typeof it.pos === 'number' && it.pos < minPos) minPos = it.pos;
+  }
+  const pos = minPos - 1;
+  const payload = {
+    t: 'add', id, kind, content,
+    author: me.addr, authorName: me.name, ts: Date.now(), pos,
+  };
+  let preview = '';
+  if (kind === 'text') preview = `: "${content.slice(0, 40)}"`;
+  else if (kind === 'color') preview = `: ${content}`;
+  webxdc.sendUpdate({
+    payload,
+    info: `${me.name} added a ${kind} to ${boardSummary()}${preview}`,
+    summary: boardSummary(),
+  }, '');
+}
+function sendRemove(itemId) {
+  webxdc.sendUpdate({
+    payload: { t: 'remove', itemId },
+    summary: boardSummary(),
+  }, '');
+}
+function sendMove(itemId, pos) {
+  webxdc.sendUpdate({
+    payload: { t: 'move', itemId, pos },
+    summary: boardSummary(),
+  }, '');
+}
+function sendName(name) {
+  webxdc.sendUpdate({
+    payload: { t: 'setName', name },
+    info: `${me.name} named the board "${name}"`,
+    summary: name || 'Mood Board',
+  }, '');
+}
+
+// ---------- presence via realtime channel (ephemeral) ----------
+let rt = null;
+try { rt = webxdc.joinRealtimeChannel ? webxdc.joinRealtimeChannel() : null; } catch (e) { rt = null; }
+const enc = new TextEncoder();
+const dec = new TextDecoder();
+if (rt && rt.setListener) {
+  rt.setListener((bytes) => {
+    try {
+      const msg = JSON.parse(dec.decode(bytes));
+      if (msg.t === 'ping' && msg.addr) {
+        state.presence.set(msg.addr, { name: msg.name || msg.addr, lastSeen: Date.now() });
+        if (msg.name) state.names.set(msg.addr, msg.name);
+        renderPresence();
+      }
+    } catch (_) {}
+  });
+}
+function ping() {
+  if (!rt || !rt.send) return;
+  try { rt.send(enc.encode(JSON.stringify({ t: 'ping', addr: me.addr, name: me.name }))); } catch (_) {}
+}
+state.presence.set(me.addr, { name: me.name, lastSeen: Date.now() });
+ping();
+setInterval(() => {
+  state.presence.set(me.addr, { name: me.name, lastSeen: Date.now() });
+  ping();
+  renderPresence();
+}, PRESENCE_INTERVAL_MS);
+
+// ---------- image: downscale & encode ----------
+document.getElementById('img-input').addEventListener('change', (ev) => {
+  const file = ev.target.files && ev.target.files[0];
+  ev.target.value = '';
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 1000;
+      let w = img.width, h = img.height;
+      if (w > MAX || h > MAX) {
+        const r = Math.min(MAX / w, MAX / h);
+        w = Math.round(w * r); h = Math.round(h * r);
+      }
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      const dataUrl = c.toDataURL('image/jpeg', 0.82);
+      sendItem('image', dataUrl);
+    };
+    img.onerror = () => alert('Could not read that image.');
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+// ---------- modals ----------
+function openColor() { document.getElementById('color-modal').classList.add('open'); }
+function openText() {
+  document.getElementById('text-modal').classList.add('open');
+  setTimeout(() => document.getElementById('text-input').focus(), 50);
+}
+let pendingConfirm = null;
+function openConfirm(message, onOk) {
+  document.getElementById('confirm-title').textContent = message;
+  pendingConfirm = onOk;
+  document.getElementById('confirm-modal').classList.add('open');
+}
+document.getElementById('confirm-ok').addEventListener('click', () => {
+  const cb = pendingConfirm;
+  pendingConfirm = null;
+  closeModals();
+  if (cb) cb();
+});
+function closeModals() {
+  document.querySelectorAll('.modal-backdrop.open').forEach(m => m.classList.remove('open'));
+  pendingConfirm = null;
+}
+document.querySelectorAll('.modal-backdrop').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) closeModals(); });
+});
+
+const cp = document.getElementById('color-picker');
+const ch = document.getElementById('color-hex');
+cp.addEventListener('input', () => { ch.value = cp.value; });
+ch.addEventListener('input', () => {
+  if (/^#[0-9a-fA-F]{6}$/.test(ch.value)) cp.value = ch.value;
+});
+function addColor() {
+  const v = ch.value.trim().toLowerCase();
+  if (!/^#[0-9a-f]{6}$/.test(v)) { alert('Use a 6-digit hex like #ff6b6b'); return; }
+  sendItem('color', v);
+  closeModals();
+}
+function addText() {
+  const v = document.getElementById('text-input').value.trim();
+  if (!v) return;
+  sendItem('text', v);
+  document.getElementById('text-input').value = '';
+  closeModals();
+}
+function openName() {
+  const input = document.getElementById('name-input');
+  input.value = state.boardName || '';
+  document.getElementById('name-modal').classList.add('open');
+  setTimeout(() => input.focus(), 50);
+}
+function saveName() {
+  const v = document.getElementById('name-input').value.trim();
+  sendName(v);
+  closeModals();
+}
+document.getElementById('name-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') saveName();
+});
+
+// ---------- render ----------
+function renderPresence() {
+  const now = Date.now();
+  for (const [addr, info] of state.presence) {
+    if (addr !== me.addr && now - info.lastSeen > PRESENCE_TIMEOUT_MS) {
+      state.presence.delete(addr);
+    }
+  }
+  const el = document.getElementById('presence');
+  el.innerHTML = '';
+  const ordered = [];
+  const self = state.presence.get(me.addr);
+  if (self) ordered.push([me.addr, self]);
+  for (const [addr, info] of state.presence) {
+    if (addr !== me.addr) ordered.push([addr, info]);
+  }
+  for (const [addr, info] of ordered.slice(0, 6)) {
+    const span = document.createElement('span');
+    span.className = 'avatar' + (addr === me.addr ? ' self' : '');
+    span.style.background = colorForAddr(addr);
+    span.textContent = initials(info.name);
+    span.title = info.name + (addr === me.addr ? ' (you)' : '');
+    el.appendChild(span);
+  }
+  const count = ordered.length;
+  const more = count > 6 ? ` +${count - 6}` : '';
+  document.getElementById('presence-count').textContent =
+    count > 1 ? `${count} here${more}` : '';
+}
+
+function render() {
+  document.getElementById('title-text').textContent = state.boardName || 'Mood Board';
+  renderPresence();
+  const grid = document.getElementById('grid');
+  const items = [...state.items.values()].sort((a, b) => (a.pos ?? 0) - (b.pos ?? 0));
+  if (items.length === 0) {
+    grid.innerHTML = '<div class="empty">Nothing here yet.<br>Add an image, color, or word to start the board.</div>';
+    return;
+  }
+  grid.innerHTML = '';
+  for (const item of items) {
+    const tile = document.createElement('div');
+    tile.className = 'tile';
+    tile.dataset.itemId = item.id;
+    let body = '';
+    let metaClass = 'tile-meta';
+    if (item.kind === 'image') {
+      body = `<img src="${item.content}" alt="">`;
+      metaClass += ' overlay';
+    } else if (item.kind === 'color') {
+      body = `<div class="swatch" style="background:${escapeHtml(item.content)}">${escapeHtml(item.content)}</div>`;
+      metaClass += ' overlay';
+    } else if (item.kind === 'text') {
+      body = `<div class="text-tile ${textSizeClass(item.content)}">${escapeHtml(item.content)}</div>`;
+    }
+    const isMine = item.author === me.addr;
+    const authorName = item.authorName || item.author || '';
+    const authorColor = colorForAddr(item.author || '');
+    const authorInitial = initials(authorName);
+    tile.innerHTML = body + `
+      <div class="${metaClass}">
+        <span class="author-dot" style="background:${authorColor}" title="${escapeHtml(authorName)}">${escapeHtml(authorInitial)}</span>
+        <button class="drag-handle" data-action="drag-handle" title="Drag to reorder">⠿</button>
+      </div>
+      ${isMine ? `<button class="delete-btn" data-id="${item.id}" data-action="remove" title="Remove">✕</button>` : ''}
+    `;
+    grid.appendChild(tile);
+  }
+}
+
+document.getElementById('grid').addEventListener('click', (e) => {
+  const tile = e.target.closest('.tile');
+  if (!tile) return;
+  const t = e.target.closest('[data-action]');
+  if (t) {
+    const action = t.dataset.action;
+    if (action === 'drag-handle') return; // handled by pointerdown
+    const id = t.dataset.id;
+    if (action === 'remove') {
+      openConfirm('Remove this from the board?', () => sendRemove(id));
+    }
+    return;
+  }
+  // Tap on tile body: toggle reveal (no-op on hover-capable devices, but harmless)
+  document.querySelectorAll('.tile.revealed').forEach(o => { if (o !== tile) o.classList.remove('revealed'); });
+  tile.classList.toggle('revealed');
+});
+
+// ---------- drag-to-reorder ----------
+document.getElementById('grid').addEventListener('pointerdown', (e) => {
+  const handle = e.target.closest('[data-action="drag-handle"]');
+  if (!handle) return;
+  const tile = handle.closest('.tile');
+  if (!tile) return;
+  e.preventDefault();
+  startDrag(tile, e);
+});
+
+function startDrag(tile, downEv) {
+  dragging = true;
+  const grid = document.getElementById('grid');
+  const rect = tile.getBoundingClientRect();
+  const offsetX = downEv.clientX - rect.left;
+  const offsetY = downEv.clientY - rect.top;
+  const ph = document.createElement('div');
+  ph.className = 'tile placeholder';
+  ph.style.height = rect.height + 'px';
+  grid.insertBefore(ph, tile);
+  Object.assign(tile.style, {
+    position: 'fixed',
+    top: rect.top + 'px',
+    left: rect.left + 'px',
+    width: rect.width + 'px',
+    margin: '0',
+    zIndex: '100',
+  });
+  tile.classList.add('dragging');
+  try { tile.setPointerCapture(downEv.pointerId); } catch (_) {}
+
+  function findTarget(x, y) {
+    let hit = null;
+    let nearest = null;
+    let nearestDist = Infinity;
+    for (const t of grid.children) {
+      if (t === tile || t === ph) continue;
+      if (!t.classList.contains('tile')) continue;
+      const r = t.getBoundingClientRect();
+      const inX = x >= r.left && x <= r.right;
+      if (inX && y >= r.top && y <= r.bottom) { hit = t; break; }
+      if (inX) {
+        const dy = Math.abs(y - (r.top + r.height / 2));
+        if (dy < nearestDist) { nearestDist = dy; nearest = t; }
+      }
+    }
+    return hit || nearest;
+  }
+
+  const move = (ev) => {
+    tile.style.top = (ev.clientY - offsetY) + 'px';
+    tile.style.left = (ev.clientX - offsetX) + 'px';
+    const target = findTarget(ev.clientX, ev.clientY);
+    if (target) {
+      const r = target.getBoundingClientRect();
+      const before = ev.clientY < r.top + r.height / 2;
+      if (before) grid.insertBefore(ph, target);
+      else grid.insertBefore(ph, target.nextSibling);
+    }
+  };
+
+  const up = (ev) => {
+    document.removeEventListener('pointermove', move);
+    document.removeEventListener('pointerup', up);
+    document.removeEventListener('pointercancel', up);
+    try { tile.releasePointerCapture(downEv.pointerId); } catch (_) {}
+    grid.insertBefore(tile, ph);
+    ph.remove();
+    tile.style.cssText = '';
+    tile.classList.remove('dragging');
+    const tiles = [...grid.querySelectorAll('.tile')];
+    const idx = tiles.indexOf(tile);
+    const getPos = (i) => state.items.get(tiles[i] && tiles[i].dataset.itemId)?.pos;
+    const prevP = idx > 0 ? getPos(idx - 1) : null;
+    const nextP = idx < tiles.length - 1 ? getPos(idx + 1) : null;
+    let newPos;
+    if (prevP == null && nextP == null) newPos = 0;
+    else if (prevP == null) newPos = nextP - 1;
+    else if (nextP == null) newPos = prevP + 1;
+    else newPos = (prevP + nextP) / 2;
+    const id = tile.dataset.itemId;
+    const cur = state.items.get(id);
+    if (cur) cur.pos = newPos;
+    sendMove(id, newPos);
+    dragging = false;
+    render();
+  };
+
+  document.addEventListener('pointermove', move);
+  document.addEventListener('pointerup', up);
+  document.addEventListener('pointercancel', up);
+}
+
+document.addEventListener('click', (e) => {
+  if (e.target.closest('.tile') || e.target.closest('.modal-backdrop')) return;
+  document.querySelectorAll('.tile.revealed').forEach(t => t.classList.remove('revealed'));
+});
+
+render();
+</script>
+</body>
+</html>
