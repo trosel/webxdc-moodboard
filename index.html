@@ -408,6 +408,14 @@ function applyPayload(p) {
 }
 
 function boardSummary() { return state.boardName || 'Mood Board'; }
+function authorSummary() { 
+  const names = [...new Set(Array.from(state.items.values()).map(item => item.authorName))];
+
+  if (names.length > 0){
+    return "from " + names.join(', ')
+  }
+}
+const itemWord = state.items.size === 1 ? 'item' : 'items';
 
 function sendItem(kind, content) {
   const id = 'i_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
@@ -423,29 +431,34 @@ function sendItem(kind, content) {
   let preview = '';
   if (kind === 'text') preview = `: "${content.slice(0, 40)}"`;
   else if (kind === 'color') preview = `: ${content}`;
+  const articleWord = kind === 'image' ? 'an' : 'a';
   webxdc.sendUpdate({
     payload,
-    info: `${me.name} added a ${kind} to ${boardSummary()}${preview}`,
-    summary: boardSummary(),
+    info: `${me.name} added ${articleWord} ${kind} to ${boardSummary()}${preview}`,
+    document: boardSummary(),
+    summary: `${state.items.size} ${itemWord} ${authorSummary()}`
   }, '');
 }
 function sendRemove(itemId) {
   webxdc.sendUpdate({
     payload: { t: 'remove', itemId },
-    summary: boardSummary(),
+    document: boardSummary(),
+    summary: `${state.items.size} ${itemWord} ${authorSummary()}`
   }, '');
 }
 function sendMove(itemId, pos) {
   webxdc.sendUpdate({
     payload: { t: 'move', itemId, pos },
-    summary: boardSummary(),
+    document: boardSummary(),
+    summary: `${state.items.size} ${itemWord} ${authorSummary()}`
   }, '');
 }
 function sendName(name) {
   webxdc.sendUpdate({
     payload: { t: 'setName', name },
     info: `${me.name} named the board "${name}"`,
-    summary: name || 'Mood Board',
+    document: name || 'Mood Board',
+    summary: `${state.items.size} ${itemWord} ${authorSummary()}`
   }, '');
 }
 
