@@ -15,6 +15,7 @@
     --muted: #6e6e6e;
     --line: #e8e6e0;
     --radius: 10px;
+    --tile-radius: 10px;
   }
   @media (prefers-color-scheme: dark) {
     :root {
@@ -34,32 +35,18 @@
     min-height: 100vh;
     -webkit-tap-highlight-color: transparent;
   }
-  header {
-    position: sticky; top: 0; z-index: 10;
-    background: var(--surface);
-    border-bottom: 1px solid var(--line);
-    padding: 10px 14px;
-    display: flex; align-items: center; gap: 10px;
-  }
-  .title {
-    font: inherit;
-    font-weight: 600; font-size: 16px;
-    margin-right: auto;
-    margin-left: -8px;
+  .gear {
     background: transparent;
     border: none;
-    color: inherit;
+    color: var(--muted);
     cursor: pointer;
-    padding: 4px 8px;
+    padding: 4px 6px;
+    font-size: 20px;
+    line-height: 1;
     border-radius: 6px;
-    display: flex; align-items: center; gap: 6px;
-    max-width: 65%;
-    text-align: left;
+    font-family: inherit;
   }
-  .title:hover { background: var(--bg); }
-  #title-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .title-edit { font-size: 11px; opacity: 0.55; flex-shrink: 0; }
-  .title:hover .title-edit { opacity: 1; }
+  .gear:hover { background: var(--bg); color: var(--ink); }
   .presence { display: flex; align-items: center; }
   .avatar {
     width: 26px; height: 26px;
@@ -69,15 +56,45 @@
     font-size: 12px; font-weight: 600;
     border: 2px solid var(--surface);
     margin-left: -8px;
+    position: relative;
+    cursor: pointer;
   }
   .avatar:first-child { margin-left: 0; }
   .avatar.self { box-shadow: 0 0 0 2px #4ecdc4; }
+  .avatar::after {
+    content: attr(data-name);
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    padding: 5px 9px;
+    background: var(--ink);
+    color: var(--bg);
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: 6px;
+    white-space: nowrap;
+    max-width: 60vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    z-index: 20;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  }
+  .avatar.show-name::after { opacity: 1; }
+  @media (hover: hover) {
+    .avatar:hover::after { opacity: 1; }
+  }
   .presence-count { color: var(--muted); font-size: 12px; margin-left: 8px; }
-  .add-bar {
+  .toolbar {
+    position: sticky; top: 0; z-index: 10;
     display: flex; gap: 6px; padding: 10px 14px;
     background: var(--surface); border-bottom: 1px solid var(--line);
     flex-wrap: wrap;
+    align-items: center;
   }
+  .toolbar > .presence { margin-left: auto; }
   .btn {
     padding: 7px 12px;
     background: var(--ink);
@@ -94,14 +111,14 @@
   .grid {
     column-count: 2;
     column-gap: 10px;
-    padding: 10px;
+    padding: 10px 10px calc(80px + env(safe-area-inset-bottom)) 10px;
   }
   @media (min-width: 600px) { .grid { column-count: 3; } }
   @media (min-width: 900px) { .grid { column-count: 4; } }
   .tile {
     break-inside: avoid;
     background: var(--surface);
-    border-radius: var(--radius);
+    border-radius: var(--tile-radius);
     margin-bottom: 10px;
     overflow: hidden;
     border: 1px solid var(--line);
@@ -118,7 +135,15 @@
     color: white;
     text-shadow: 0 1px 2px rgba(0,0,0,0.45);
   }
-  .text-tile { padding: 10px 12px; font-size: 15px; line-height: 1.45; font-weight: 500; }
+  .text-tile {
+    padding: 10px 12px;
+    font-size: 15px;
+    line-height: 1.45;
+    font-weight: 500;
+    text-wrap: pretty;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+  }
   .text-tile.text-display {
     font-size: 32px;
     font-weight: 600;
@@ -126,12 +151,44 @@
     letter-spacing: -0.015em;
     padding: 14px 14px;
     text-align: center;
+    text-wrap: balance;
   }
   .text-tile.text-medium {
     font-size: 20px;
     line-height: 1.3;
     padding: 12px 14px;
+    text-align: center;
+    text-wrap: balance;
   }
+  .text-tile.font-serif { font-family: Georgia, "Noto Serif", "Times New Roman", serif; }
+  .text-tile.font-mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Roboto Mono", monospace; }
+  .pill-row { display: flex; gap: 6px; }
+  .pill {
+    flex: 1;
+    padding: 10px 8px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--ink);
+    font-size: 15px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .pill[data-font="serif"] { font-family: Georgia, "Noto Serif", "Times New Roman", serif; }
+  .pill[data-font="mono"] { font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Roboto Mono", monospace; }
+  .pill.selected {
+    border-color: var(--ink);
+    background: var(--bg);
+    font-weight: 600;
+  }
+  .setting-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 4px;
+  }
+  .setting-label:first-of-type { margin-top: 0; }
   .tile-meta {
     display: flex; align-items: center; gap: 8px;
     padding: 3px 8px;
@@ -140,10 +197,10 @@
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.15s ease;
-  }
-  .tile-meta.overlay {
     position: absolute;
     left: 0; right: 0; bottom: 0;
+  }
+  .tile-meta.overlay {
     padding: 22px 10px 8px;
     background: linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0));
     color: rgba(255,255,255,0.95);
@@ -241,7 +298,7 @@
     display: flex; flex-direction: column; gap: 10px;
   }
   .modal h3 { margin: 0 0 4px; font-size: 16px; }
-  input[type=text], input[type=color] {
+  input[type=text], input[type=color], textarea {
     padding: 8px;
     border: 1px solid var(--line);
     border-radius: 8px;
@@ -251,6 +308,14 @@
     color: var(--ink);
   }
   input[type=color] { height: 44px; padding: 4px; cursor: pointer; }
+  textarea {
+    resize: none;
+    min-height: 44px;
+    max-height: 200px;
+    line-height: 1.4;
+    font-family: inherit;
+    overflow-y: auto;
+  }
   .row { display: flex; gap: 8px; }
   .row .btn { flex: 1; }
   .empty {
@@ -261,19 +326,14 @@
 </style>
 </head>
 <body>
-<header>
-  <button class="title" type="button" onclick="openName()" title="Rename this board">
-    <span id="title-text">Mood Board</span>
-    <span class="title-edit" aria-hidden="true">✎</span>
-  </button>
-  <div class="presence" id="presence"></div>
-  <span class="presence-count" id="presence-count"></span>
-</header>
-<div class="add-bar">
+<div class="toolbar">
   <button class="btn ghost" onclick="document.getElementById('img-input').click()">+ Image</button>
   <input type="file" id="img-input" accept="image/*" style="display:none">
   <button class="btn ghost" onclick="openColor()">+ Color</button>
   <button class="btn ghost" onclick="openText()">+ Text</button>
+  <div class="presence" id="presence"></div>
+  <span class="presence-count" id="presence-count"></span>
+  <button class="gear" type="button" onclick="openSettings()" title="Board settings" aria-label="Board settings">⚙</button>
 </div>
 <div id="grid" class="grid"></div>
 
@@ -291,20 +351,31 @@
 <div class="modal-backdrop" id="text-modal">
   <div class="modal">
     <h3>Add text</h3>
-    <input type="text" id="text-input" placeholder="A word, a phrase, a vibe..." maxlength="120">
+    <textarea id="text-input" placeholder="A word, a phrase, a vibe..." maxlength="500" rows="2"></textarea>
+    <div class="pill-row" id="font-picker">
+      <button type="button" class="pill selected" data-font="sans">Sans</button>
+      <button type="button" class="pill" data-font="serif">Serif</button>
+      <button type="button" class="pill" data-font="mono">Mono</button>
+    </div>
     <div class="row">
       <button class="btn ghost" onclick="closeModals()">Cancel</button>
       <button class="btn" onclick="addText()">Add</button>
     </div>
   </div>
 </div>
-<div class="modal-backdrop" id="name-modal">
+<div class="modal-backdrop" id="settings-modal">
   <div class="modal">
-    <h3>Name this board</h3>
-    <input type="text" id="name-input" placeholder="e.g. New Website" maxlength="60">
+    <h3>Board settings</h3>
+    <div class="setting-label">Name</div>
+    <input type="text" id="settings-name" placeholder="Mood Board" maxlength="60">
+    <div class="setting-label">Tile corners</div>
+    <div class="pill-row" id="corners-picker">
+      <button type="button" class="pill" data-corners="rounded">Rounded</button>
+      <button type="button" class="pill" data-corners="sharp">Sharp</button>
+    </div>
     <div class="row">
       <button class="btn ghost" onclick="closeModals()">Cancel</button>
-      <button class="btn" onclick="saveName()">Save</button>
+      <button class="btn" onclick="saveSettings()">Save</button>
     </div>
   </div>
 </div>
@@ -352,6 +423,7 @@ const state = {
   names: new Map(),    // addr -> displayName
   presence: new Map(), // addr -> {name, lastSeen}
   boardName: '',
+  corners: 'rounded',  // 'rounded' | 'sharp'
 };
 const me = {
   addr: webxdc.selfAddr,
@@ -385,13 +457,19 @@ let dragging = false;
 webxdc.setUpdateListener((u) => {
   applyPayload(u.payload);
   if (!dragging) render();
-}, 0);
+}, 0).then(() => {
+  // Fresh board with no synced state — this user just created it. Prompt for a name.
+  if (!state.boardName && state.items.size === 0) {
+    openSettings();
+  }
+});
 
 function applyPayload(p) {
   if (!p || !p.t) return;
   if (p.t === 'add') {
     state.items.set(p.id, {
       id: p.id, kind: p.kind, content: p.content,
+      font: p.font || null,
       author: p.author, authorName: p.authorName, ts: p.ts || 0,
       pos: (p.pos != null) ? p.pos : (p.ts || 0),
     });
@@ -404,31 +482,44 @@ function applyPayload(p) {
   } else if (p.t === 'setName') {
     state.boardName = (typeof p.name === 'string') ? p.name : '';
     document.title = state.boardName || 'Mood Board';
+  } else if (p.t === 'setCorners') {
+    state.corners = (p.corners === 'sharp') ? 'sharp' : 'rounded';
+    applyCorners();
   }
 }
 
+function applyCorners() {
+  document.documentElement.style.setProperty(
+    '--tile-radius', state.corners === 'sharp' ? '0px' : '10px'
+  );
+}
+
 function boardSummary() { return state.boardName || 'Mood Board'; }
-// Add an optional 'newItem' parameter to include in the count/authors
-function itemSummary(newItem = null) { 
+// Optional 'newItem' parameter reflects an in-flight payload not yet in state.
+function itemSummary(newItem = null) {
   let count = state.items.size;
-  if (newItem && newItem.t === 'add') count += 1; // Count the incoming item
-  
+  if (newItem?.t === 'add') count += 1;
+  else if (newItem?.t === 'remove' && state.items.has(newItem.itemId)) count -= 1;
+
   if (count === 0) return 'Add something';
   return `${count} ${count === 1 ? 'item' : 'items'}`;
 }
 
-function authorSummary(newItem = null) { 
-  const names = [...new Set(Array.from(state.items.values()).map(item => item.authorName))];
-  
-  // If we are adding an item, make sure its author is included in the list
-  if (newItem && newItem.t === 'add' && !names.includes(newItem.authorName)) {
+function authorSummary(newItem = null) {
+  let entries = Array.from(state.items.values());
+  if (newItem?.t === 'remove') {
+    entries = entries.filter(it => it.id !== newItem.itemId);
+  }
+  const names = [...new Set(entries.map(item => item.authorName))];
+
+  if (newItem?.t === 'add' && !names.includes(newItem.authorName)) {
     names.push(newItem.authorName);
   }
 
   return names.length > 0 ? ` from ${names.join(', ')}` : '';
 }
 
-function sendItem(kind, content) {
+function sendItem(kind, content, extra) {
   const id = 'i_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
   let minPos = 0;
   for (const it of state.items.values()) {
@@ -438,6 +529,7 @@ function sendItem(kind, content) {
   const payload = {
     t: 'add', id, kind, content,
     author: me.addr, authorName: me.name, ts: Date.now(), pos,
+    ...(extra || {}),
   };
   let preview = '';
   if (kind === 'text') preview = `: "${content.slice(0, 40)}"`;
@@ -447,14 +539,15 @@ function sendItem(kind, content) {
     payload,
     info: `${me.name} added ${articleWord} ${kind} to ${boardSummary()}${preview}`,
     document: boardSummary(),
-    summary: `${itemSummary(payload)}${authorSummary(payload)}`
+    summary: `${itemSummary(payload)}${authorSummary(payload)}`,
   }, '');
 }
 function sendRemove(itemId) {
+  const removed = { t: 'remove', itemId };
   webxdc.sendUpdate({
-    payload: { t: 'remove', itemId },
+    payload: removed,
     document: boardSummary(),
-    summary: `${itemSummary()}${authorSummary()}`
+    summary: `${itemSummary(removed)}${authorSummary(removed)}`
   }, '');
 }
 function sendMove(itemId, pos) {
@@ -469,6 +562,13 @@ function sendName(name) {
     payload: { t: 'setName', name },
     info: `${me.name} named the board "${name}"`,
     document: name || 'Mood Board',
+    summary: `${itemSummary()}${authorSummary()}`
+  }, '');
+}
+function sendCorners(corners) {
+  webxdc.sendUpdate({
+    payload: { t: 'setCorners', corners },
+    document: boardSummary(),
     summary: `${itemSummary()}${authorSummary()}`
   }, '');
 }
@@ -502,13 +602,30 @@ setInterval(() => {
   renderPresence();
 }, PRESENCE_INTERVAL_MS);
 
-// ---------- image: downscale & encode ----------
+// ---------- image: pass-through for GIF / transparent formats, downscale otherwise ----------
 document.getElementById('img-input').addEventListener('change', (ev) => {
   const file = ev.target.files && ev.target.files[0];
   ev.target.value = '';
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
+
+  const type = (file.type || '').toLowerCase();
+  const PASSTHROUGH_MAX = 2 * 1024 * 1024;   // 2 MB cap for non-animated pass-through
+  const GIF_MAX = 4 * 1024 * 1024;           // GIFs must pass through to keep animation
+  const isGif = type === 'image/gif';
+  const hasAlpha = type === 'image/png' || type === 'image/webp';
+
+  if (isGif) {
+    if (file.size > GIF_MAX) {
+      alert('That GIF is over 4 MB. Try a smaller or shorter one — resizing would kill the animation.');
+      return;
+    }
+    return readAsDataUrl(file, (url) => sendItem('image', url));
+  }
+  if (hasAlpha && file.size <= PASSTHROUGH_MAX) {
+    return readAsDataUrl(file, (url) => sendItem('image', url));
+  }
+  // Fall back to downscale. Preserve alpha (PNG out) when source had it; else JPEG.
+  readAsDataUrl(file, (sourceUrl) => {
     const img = new Image();
     img.onload = () => {
       const MAX = 1000;
@@ -520,21 +637,48 @@ document.getElementById('img-input').addEventListener('change', (ev) => {
       const c = document.createElement('canvas');
       c.width = w; c.height = h;
       c.getContext('2d').drawImage(img, 0, 0, w, h);
-      const dataUrl = c.toDataURL('image/jpeg', 0.82);
+      const dataUrl = hasAlpha
+        ? c.toDataURL('image/png')
+        : c.toDataURL('image/jpeg', 0.82);
       sendItem('image', dataUrl);
     };
     img.onerror = () => alert('Could not read that image.');
-    img.src = reader.result;
-  };
-  reader.readAsDataURL(file);
+    img.src = sourceUrl;
+  });
 });
+
+function readAsDataUrl(file, cb) {
+  const reader = new FileReader();
+  reader.onload = () => cb(reader.result);
+  reader.onerror = () => alert('Could not read that image.');
+  reader.readAsDataURL(file);
+}
 
 // ---------- modals ----------
 function openColor() { document.getElementById('color-modal').classList.add('open'); }
+let selectedFont = 'sans';
 function openText() {
+  selectedFont = 'sans';
+  document.querySelectorAll('#font-picker .pill').forEach(c => {
+    c.classList.toggle('selected', c.dataset.font === 'sans');
+  });
+  const ta = document.getElementById('text-input');
+  ta.style.height = 'auto';
   document.getElementById('text-modal').classList.add('open');
-  setTimeout(() => document.getElementById('text-input').focus(), 50);
+  setTimeout(() => ta.focus(), 50);
 }
+document.getElementById('text-input').addEventListener('input', (e) => {
+  e.target.style.height = 'auto';
+  e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px';
+});
+document.getElementById('font-picker').addEventListener('click', (e) => {
+  const chip = e.target.closest('.pill');
+  if (!chip) return;
+  selectedFont = chip.dataset.font;
+  document.querySelectorAll('#font-picker .pill').forEach(c => {
+    c.classList.toggle('selected', c === chip);
+  });
+});
 let pendingConfirm = null;
 function openConfirm(message, onOk) {
   document.getElementById('confirm-title').textContent = message;
@@ -570,23 +714,37 @@ function addColor() {
 function addText() {
   const v = document.getElementById('text-input').value.trim();
   if (!v) return;
-  sendItem('text', v);
+  sendItem('text', v, selectedFont !== 'sans' ? { font: selectedFont } : null);
   document.getElementById('text-input').value = '';
   closeModals();
 }
-function openName() {
-  const input = document.getElementById('name-input');
+let pendingCorners = 'rounded';
+function openSettings() {
+  const input = document.getElementById('settings-name');
   input.value = state.boardName || '';
-  document.getElementById('name-modal').classList.add('open');
+  pendingCorners = state.corners;
+  document.querySelectorAll('#corners-picker .pill').forEach(p => {
+    p.classList.toggle('selected', p.dataset.corners === pendingCorners);
+  });
+  document.getElementById('settings-modal').classList.add('open');
   setTimeout(() => input.focus(), 50);
 }
-function saveName() {
-  const v = document.getElementById('name-input').value.trim();
-  sendName(v);
+document.getElementById('corners-picker').addEventListener('click', (e) => {
+  const pill = e.target.closest('.pill');
+  if (!pill) return;
+  pendingCorners = pill.dataset.corners;
+  document.querySelectorAll('#corners-picker .pill').forEach(p => {
+    p.classList.toggle('selected', p === pill);
+  });
+});
+function saveSettings() {
+  const newName = document.getElementById('settings-name').value.trim();
+  if (newName !== state.boardName) sendName(newName);
+  if (pendingCorners !== state.corners) sendCorners(pendingCorners);
   closeModals();
 }
-document.getElementById('name-input').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') saveName();
+document.getElementById('settings-name').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') saveSettings();
 });
 
 // ---------- render ----------
@@ -610,7 +768,9 @@ function renderPresence() {
     span.className = 'avatar' + (addr === me.addr ? ' self' : '');
     span.style.background = colorForAddr(addr);
     span.textContent = initials(info.name);
-    span.title = info.name + (addr === me.addr ? ' (you)' : '');
+    const label = info.name + (addr === me.addr ? ' (you)' : '');
+    span.setAttribute('data-name', label);
+    span.setAttribute('aria-label', label);
     el.appendChild(span);
   }
   const count = ordered.length;
@@ -620,7 +780,6 @@ function renderPresence() {
 }
 
 function render() {
-  document.getElementById('title-text').textContent = state.boardName || 'Mood Board';
   renderPresence();
   const grid = document.getElementById('grid');
   const items = [...state.items.values()].sort((a, b) => (a.pos ?? 0) - (b.pos ?? 0));
@@ -642,7 +801,8 @@ function render() {
       body = `<div class="swatch" style="background:${escapeHtml(item.content)}">${escapeHtml(item.content)}</div>`;
       metaClass += ' overlay';
     } else if (item.kind === 'text') {
-      body = `<div class="text-tile ${textSizeClass(item.content)}">${escapeHtml(item.content)}</div>`;
+      const fontClass = item.font ? `font-${item.font}` : '';
+      body = `<div class="text-tile ${textSizeClass(item.content)} ${fontClass}">${escapeHtml(item.content)}</div>`;
     }
     const isMine = item.author === me.addr;
     const authorName = item.authorName || item.author || '';
@@ -770,7 +930,18 @@ function startDrag(tile, downEv) {
   document.addEventListener('pointercancel', up);
 }
 
+document.getElementById('presence').addEventListener('click', (e) => {
+  const av = e.target.closest('.avatar');
+  if (!av) return;
+  const wasShown = av.classList.contains('show-name');
+  document.querySelectorAll('.avatar.show-name').forEach(a => a.classList.remove('show-name'));
+  if (!wasShown) av.classList.add('show-name');
+});
+
 document.addEventListener('click', (e) => {
+  if (!e.target.closest('.avatar')) {
+    document.querySelectorAll('.avatar.show-name').forEach(a => a.classList.remove('show-name'));
+  }
   if (e.target.closest('.tile') || e.target.closest('.modal-backdrop')) return;
   document.querySelectorAll('.tile.revealed').forEach(t => t.classList.remove('revealed'));
 });
