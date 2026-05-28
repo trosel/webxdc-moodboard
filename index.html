@@ -223,6 +223,33 @@
     font-size: 10px;
     font-weight: 600;
     font-family: inherit;
+    position: relative;
+    cursor: pointer;
+  }
+  .author-dot::after {
+    content: attr(data-name);
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 0;
+    padding: 5px 9px;
+    background: var(--ink);
+    color: var(--bg);
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: 6px;
+    white-space: nowrap;
+    max-width: 60vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    z-index: 5;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  }
+  .author-dot.show-name::after { opacity: 1; }
+  @media (hover: hover) {
+    .author-dot:hover::after { opacity: 1; }
   }
   .tile-meta.overlay .author-dot {
     width: 20px; height: 20px;
@@ -558,6 +585,9 @@ function sendMove(itemId, pos) {
   }, '');
 }
 function sendName(name) {
+  // Optimistic local update so subsequent reads/updates see the new name immediately.
+  state.boardName = name;
+  document.title = name || 'Mood Board';
   webxdc.sendUpdate({
     payload: { t: 'setName', name },
     info: `${me.name} named the board "${name}"`,
@@ -566,6 +596,9 @@ function sendName(name) {
   }, '');
 }
 function sendCorners(corners) {
+  // Optimistic local update — apply right away, echoed setCorners will be idempotent.
+  state.corners = corners;
+  applyCorners();
   webxdc.sendUpdate({
     payload: { t: 'setCorners', corners },
     document: boardSummary(),
@@ -810,7 +843,7 @@ function render() {
     const authorInitial = initials(authorName);
     tile.innerHTML = body + `
       <div class="${metaClass}">
-        <span class="author-dot" style="background:${authorColor}" title="${escapeHtml(authorName)}">${escapeHtml(authorInitial)}</span>
+        <span class="author-dot" data-action="show-name" data-name="${escapeHtml(authorName)}" aria-label="${escapeHtml(authorName)}" style="background:${authorColor}">${escapeHtml(authorInitial)}</span>
         <button class="drag-handle" data-action="drag-handle" title="Drag to reorder">⠿</button>
       </div>
       ${isMine ? `<button class="delete-btn" data-id="${item.id}" data-action="remove" title="Remove">✕</button>` : ''}
@@ -826,6 +859,12 @@ document.getElementById('grid').addEventListener('click', (e) => {
   if (t) {
     const action = t.dataset.action;
     if (action === 'drag-handle') return; // handled by pointerdown
+    if (action === 'show-name') {
+      const wasShown = t.classList.contains('show-name');
+      document.querySelectorAll('.author-dot.show-name').forEach(d => d.classList.remove('show-name'));
+      if (!wasShown) t.classList.add('show-name');
+      return;
+    }
     const id = t.dataset.id;
     if (action === 'remove') {
       openConfirm('Remove this from the board?', () => sendRemove(id));
@@ -941,6 +980,9 @@ document.getElementById('presence').addEventListener('click', (e) => {
 document.addEventListener('click', (e) => {
   if (!e.target.closest('.avatar')) {
     document.querySelectorAll('.avatar.show-name').forEach(a => a.classList.remove('show-name'));
+  }
+  if (!e.target.closest('.author-dot')) {
+    document.querySelectorAll('.author-dot.show-name').forEach(d => d.classList.remove('show-name'));
   }
   if (e.target.closest('.tile') || e.target.closest('.modal-backdrop')) return;
   document.querySelectorAll('.tile.revealed').forEach(t => t.classList.remove('revealed'));
