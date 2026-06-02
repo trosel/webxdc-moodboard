@@ -482,8 +482,13 @@ function textSizeClass(text) {
 let dragging = false;
 
 webxdc.setUpdateListener((u) => {
-  applyPayload(u.payload);
-  if (!dragging) render();
+  const p = u.payload;
+  applyPayload(p);
+  // setCorners/setName don't change the tile grid — applyCorners()/document.title
+  // already handle them, so a full render() would just needlessly rebuild every
+  // tile (and reload all images). Only re-render when the item set changes.
+  const affectsGrid = p && (p.t === 'add' || p.t === 'remove' || p.t === 'move');
+  if (affectsGrid && !dragging) render();
 }, 0).then(() => {
   // Fresh board with no synced state — this user just created it. Prompt for a name.
   if (!state.boardName && state.items.size === 0) {
